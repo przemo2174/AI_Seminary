@@ -45,6 +45,9 @@ def update_weights(radio, sales, weight, bias, learning_rate):
     return weight, bias
 
 def train(radio, sales, weight, bias, learning_rate, iters):
+    global weights
+    global biases
+    global costs
     cost_history = []
     weight_history = []
     bias_history = []
@@ -61,79 +64,150 @@ def train(radio, sales, weight, bias, learning_rate, iters):
         # Log Progress
         if i % 5 == 0:
             print("iter: "+str(i) + " cost: "+str(cost))
-            plt.scatter(radio, sales)
-            plt.plot(radio, [y * weight + bias for y in radio], color='red')
-            plt.title('Iter: %i    Weight: %f\nBias: %f    Cost: %f\n' % (i, weight, bias, cost))
+
+            # plot data
+            fig = plt.figure()
+            ax1 = fig.add_subplot(211)
+            ax1.scatter(radio, sales)
+            ax1.plot(radio, [y * weight + bias for y in radio], color='red')
+            ax1.set_title('Iter: %i    Weight: %f\nBias: %f    Cost: %f\n' % (i, weight, bias, cost))
+            ax2 = fig.add_subplot(212, projection='3d')
+            ax2.plot_wireframe(weights, biases, costs, color='grey')
+            ax2.scatter(weight, bias, cost, color='red')
+            ax2.text(weight, bias, cost, 'Cost: %f\nWeight: %f\n Bias: %f' % (cost, weight, bias), size=12, color='green')
+            ax2.set_xlabel('Weight')
+            ax2.set_ylabel('Bias')
+            ax2.set_zlabel('Cost')
+          
+            manager = plt.get_current_fig_manager()
+            manager.window.showMaximized()
             plt.show()
+
+            # plt.scatter(radio, sales)
+            # plt.plot(radio, [y * weight + bias for y in radio], color='red')
+            # plt.title('Iter: %i    Weight: %f\nBias: %f    Cost: %f\n' % (i, weight, bias, cost))
+            # manager = plt.get_current_fig_manager()
+            # manager.window.showMaximized()
+            # plt.show()
 
         
     return weight, bias, cost_history, weight_history, bias_history
 
-def cost_function_plot3D(radio, sales):
-    weights = np.linspace(-2, 2, 1000)
-    biases = np.linspace(-2, 2, 1000)
+def cost_function_plot3D(x, y, n):
+    w = np.linspace(-5, 5, n)
+    b = np.linspace(-30, 30, n)
 
-    weights, biases = np.meshgrid(weights, biases)
+    # Generate meshgrid
+    weights, biases = np.meshgrid(w, b)
+    weights = weights.ravel()
+    biases = biases.ravel()
 
-    costs = cost_function_matrix(radio, sales, weights, biases)
+    costs = []
+    for i in range(0, n ** 2):
+            cost = cost_function(x, y, weights[i], biases[i])
+            costs.append(cost)
+
+    weights = weights.reshape(n, n)
+    biases = biases.reshape(n, n)
+    costs = np.array(costs).reshape(n, n)
 
     ax = plt.axes(projection='3d')
-    ax.plot3D(weights.ravel(), biases.ravel(), costs.ravel())
+    ax.plot_wireframe(weights, biases, costs, color='grey')
     ax.set_xlabel('Weight')
     ax.set_ylabel('Bias')
     ax.set_zlabel('Cost')
+    manager = plt.get_current_fig_manager()
+    manager.window.showMaximized()
     plt.show()
-
-def f(x, y):
-    return np.sin(np.sqrt(x ** 2 + y ** 2))
     
-
-
-
-
 if __name__ == '__main__':
     
+    # Read data from csv
     df = pd.read_csv('Advertising.csv')
 
-    # Get sales and radio data from csv
+    # Retrieve sales and radio data
     y = df['sales']
     x = df['radio']
 
-    n = 100
+    # Plot data x = radio, y = sales
+    plt.scatter(x, y)
+    plt.xlabel('Radio ($)')
+    plt.ylabel('Sales (unit)')
+    manager = plt.get_current_fig_manager()
+    manager.window.showMaximized()
+    plt.show()
 
+    # Chose random weight and bias for initial step
+    weight = np.random.randn()
+    bias = np.random.randn()
+
+    # Print random weight and bias in a console
+    print('Random weight:', weight)
+    print('Random bias:', bias)
+
+    # Initialize neccessary parameters
+    learning_rate = 0.001
+    iters = 100
+
+    cost_function_plot3D(x, y, 100)
+
+    # Generate weight and bias values needed for visualizing a cost function
+    n = 100
     w = np.linspace(-1, 1, n)
     b = np.linspace(-1, 1, n)
+
+    # Generate meshgrid
+    weights, biases = np.meshgrid(w, b)
+    weights = weights.ravel()
+    biases = biases.ravel()
+
+    costs = []
+    for i in range(0, n ** 2):
+            cost = cost_function(x, y, weights[i], biases[i])
+            costs.append(cost)
+
+    weights = weights.reshape(n, n)
+    biases = biases.reshape(n, n)
+    costs = np.array(costs).reshape(n, n)
+
+
+    # Perform training
+    weight, bias, cost_history, weight_history, bias_history = train(x, y, weight, bias, learning_rate, iters)
+
+    # Plot cost in each iteration
+    plt.plot(range(0, iters), cost_history)
+    plt.title('Cost in each iteration')
+    plt.xlabel('Iteration')
+    plt.ylabel('Cost')
+    plt.show()
+
+
+    exit()
+
+
+    n = 100
+
+    
 
 
     # print(predict_sales(x, w[0], b[0]))
     # print(predict_sales(x, w[0], b[1]))
     # print(predict_sales(x, w[0], b[2]))
 
-    weights, biases = np.meshgrid(w, b)
-    weights = weights.ravel()
-    biases = biases.ravel()
+    
     print(weights)
     print(biases)
-    costs = []
-    for i in range(0, n ** 2):
-            cost = cost_function(x, y, weights[i], biases[i])
-            costs.append(cost)
+    
     
     print(len(costs))
 
     costs = np.array(costs)
     print(costs)
 
-    Z = f(w,b)
-    print(Z.shape)
-
     print(weights.shape)
     print(biases.shape)
     print(costs.shape)
 
-    weights = weights.reshape(n, n)
-    biases = biases.reshape(n, n)
-    costs = costs.reshape(n, n)
 
     ax = plt.axes(projection='3d')
     ax.plot_wireframe(weights, biases, costs, color='grey')
@@ -144,40 +218,24 @@ if __name__ == '__main__':
     plt.show()
 
     
-
-    # Plot data
-    plt.scatter(x, y)
-    plt.xlabel('Radio ($)')
-    plt.ylabel('Sales (unit)')
-    plt.show()
+    
 
     weight = 0.3
     bias = 0.014
 
-    # Chose random weight and bias for initial step
-    weight = np.random.randn()
-    bias = np.random.randn()
+    
 
-    # Print random weight and bias in a console
-    print('Random weight:', weight)
-    print('Random bias:', bias)
+    
 
     learning_rate = 0.001
     iters = 100
 
-    weight, bias, cost_history, weight_history, bias_history = train(x, y, weight, bias, 0.001, 100)
+    
     # print(weight, bias, cost_history)
 
-    cost_function_plot3D(x, y)
 
     # plt.plot(weight_history, bias_history, cost_history)
     # plt.show()
-
-    plt.plot(range(0, iters), cost_history)
-    plt.title('Cost Function')
-    plt.xlabel('Iteration')
-    plt.ylabel('MSE')
-    plt.show()
 
 
 # for i in range(0, 30):
